@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 // Generate JWT Token
 const generateToken = (res, userId) => {
   const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '30d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h'
   });
 
   // Set cookie
@@ -13,7 +13,7 @@ const generateToken = (res, userId) => {
     httpOnly: true,
     secure: process.env.NODE_ENV !== 'development',
     sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    maxAge: 30 * 60 * 60 * 1000 // 30 days
   });
 
   return token;
@@ -24,10 +24,10 @@ const generateToken = (res, userId) => {
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, role } = req.body;
 
     // Validation
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !role) {
       return res.status(400).json({ 
         success: false,
         error: 'Please include all fields' 
@@ -46,7 +46,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Create user
-    const user = new User({ username, email, password });
+    const user = new User({ username, email, password, role });
     await user.save();
 
     // Generate token and send response
@@ -151,6 +151,88 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Server error' 
+    });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { username, email, currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    // Check if username or email already exists (excluding current user)
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Username already taken' 
+        });
+      }
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Email already in use' 
+        });
+      }
+    }
+
+    // Update basic fields
+    if (username) user.username = username;
+    if (email) user.email = email;
+
+    // Handle password change
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Current password is required to change password' 
+        });
+      }
+
+      // Verify current password
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Current password is incorrect' 
+        });
+      }
+
+      user.password = newPassword;
+    }
+
+    await user.save();
+
+    // Send response without password
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: userResponse
+    });
+
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ 
+      success: false,
+      error: err.message || 'Profile update failed' 
     });
   }
 };

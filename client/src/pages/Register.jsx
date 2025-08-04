@@ -7,6 +7,7 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Register = () => {
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, role }),
       });
       const data = await response.json();
       if (response.ok) {
@@ -87,6 +88,31 @@ const Register = () => {
             </div>
           </div>
 
+          {/* Radio Buttons for Role Selection */}
+          <div className="auth-input-group">
+            <label>Select Role</label>
+            <div className="auth-radio-group">
+              <label>
+                <input
+                  type="radio"
+                  value="user"
+                  checked={role === "user"}
+                  onChange={() => setRole("user")}
+                />
+                Buyer
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="vendor"
+                  checked={role === "vendor"}
+                  onChange={() => setRole("vendor")}
+                />
+                Seller
+              </label>
+            </div>
+          </div>
+
           <button type="submit" className="auth-button">
             Register
           </button>
@@ -95,7 +121,7 @@ const Register = () => {
         <div className="auth-footer">
           Already have an account?{" "}
           <Link to="/login" className="auth-link">
-             Login
+            Login
           </Link>
         </div>
       </div>
