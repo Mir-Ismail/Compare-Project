@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 import "../Styles/style.css";
 
-const Login = ({ setIsAuthenticated }) => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,26 +19,30 @@ const Login = ({ setIsAuthenticated }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
+      const result = await login(email, password);
+      
+      if (result.success) {
+        // Get user role and navigate accordingly
+        const userRole = result.data?.role;
+        
+        if (userRole === "buyer" || !userRole) {
+          // Buyers go to home page
+          navigate("/");
+        } else if (userRole === "vendor") {
+          // Vendors go to dashboard
+          navigate("/dashboard");
+        } else if (userRole === "admin") {
+          // Admins go to dashboard
+          navigate("/dashboard");
+        } else {
+          // Default fallback to home page
+          navigate("/");
+        }
+      } else {
+        setError(result.error);
       }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      setIsAuthenticated(true);
-
-      window.location.href = "/dashboard";
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      setError("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }

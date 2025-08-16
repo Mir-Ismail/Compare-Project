@@ -1,32 +1,52 @@
 import React from "react";
+import { motion } from "framer-motion";
+import "../../Styles/Home.css";
 
-function technologySection() {
+const steps = [
+  {
+    title: "Browse Products",
+    desc: "Use powerful search and filters to explore thousands of listings.",
+    icon: "🔍",
+  },
+  {
+    title: "Compare & Decide",
+    desc: "Side-by-side comparisons with pricing, reviews, and features.",
+    icon: "⚖️",
+  },
+  {
+    title: "Buy or Save",
+    desc: "Buy immediately or save your cart/collection for later.",
+    icon: "🛒",
+  },
+];
+
+const technologySection = () => {
   return (
-    <section className="technologies">
-      <h2 className="section-title">Built With Modern Technologies</h2>
-      <div className="tech-grid">
-        {[
-          { name: "React", icon: "/images/react-logo.png" },
-          { name: "Node.js", icon: "/images/node-logo.png" },
-          { name: "Docker", icon: "/images/docker-logo.png" },
-          { name: "Android", icon: "/images/android-logo.png" },
-          { name: "VS Code", icon: "/images/vscode-logo.png" },
-        ].map((tech, index) => (
-          <div
-            className="tech-card"
-            key={tech.name}
-            data-aos="zoom-in"
-            data-aos-delay={index * 100}
+    <section className="tech-section">
+      <h2 className="section-title">
+        How It <span className="gradient-text-orange-red">Works</span>
+      </h2>
+      <p className="section-subtitle">
+        Simple steps to find the perfect products at the best prices
+      </p>
+      <div className="steps">
+        {steps.map((step, index) => (
+          <motion.div
+            className="step-card"
+            key={index}
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: index * 0.2 }}
+            viewport={{ once: true }}
           >
-            <div className="tech-icon">
-              <img src={tech.icon} alt={tech.name} />
-            </div>
-            <h3>{tech.name}</h3>
-          </div>
+            <div className="step-icon">{step.icon}</div>
+            <h3 className="gradient-text-purple-pink">{step.title}</h3>
+            <p>{step.desc}</p>
+          </motion.div>
         ))}
       </div>
     </section>
   );
-}
+};
 
 export default technologySection;

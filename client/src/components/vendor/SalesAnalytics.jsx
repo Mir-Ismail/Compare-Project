@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FiTrendingUp, FiDollarSign, FiShoppingCart, FiPackage } from 'react-icons/fi';
+import './SalesAnalytics.css';
 
-const SalesAnalytics = () => {
+const SalesAnalytics = React.forwardRef((props, ref) => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,9 +12,21 @@ const SalesAnalytics = () => {
     fetchAnalytics();
   }, [period]);
 
+  // Expose refresh function for parent component
+  React.useImperativeHandle(ref, () => ({
+    refresh: fetchAnalytics
+  }));
+
   const fetchAnalytics = async () => {
     try {
+      setLoading(true);
+      setError(null);
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await fetch(`http://localhost:5000/api/vendor/analytics?period=${period}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -22,12 +35,14 @@ const SalesAnalytics = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch analytics`);
       }
 
       const data = await response.json();
       setAnalytics(data);
     } catch (err) {
+      console.error('Analytics fetch error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -41,9 +56,38 @@ const SalesAnalytics = () => {
     }).format(amount);
   };
 
-  if (loading) return <div className="loading">Loading analytics...</div>;
-  if (error) return <div className="error">Error: {error}</div>;
-  if (!analytics) return <div className="error">No analytics data available</div>;
+  if (loading) {
+    return (
+      <div className="analytics-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading analytics data...</p>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="analytics-error">
+        <h3>Error Loading Analytics</h3>
+        <p>{error}</p>
+        <button onClick={fetchAnalytics} className="retry-btn">
+          Try Again
+        </button>
+      </div>
+    );
+  }
+  
+  if (!analytics) {
+    return (
+      <div className="analytics-error">
+        <h3>No Analytics Data</h3>
+        <p>No analytics data is available for this period.</p>
+        <button onClick={fetchAnalytics} className="retry-btn">
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="sales-analytics">
@@ -185,6 +229,6 @@ const SalesAnalytics = () => {
       </div>
     </div>
   );
-};
+});
 
 export default SalesAnalytics; 

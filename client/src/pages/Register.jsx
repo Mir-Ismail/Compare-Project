@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../Styles/style.css";
 import { FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -10,25 +11,28 @@ const Register = () => {
   const [role, setRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
+
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password, role }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        navigate("/login");
+      const result = await register({ username, email, password, role });
+
+      if (result.success) {
+        // Redirect to home page for all users after registration
+        navigate("/");
       } else {
-        setError(data.error || "Registration failed. Please try again.");
+        setError(result.error);
       }
     } catch (err) {
-      setError("Network error. Please try again.");
+      setError("Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -95,9 +99,9 @@ const Register = () => {
               <label>
                 <input
                   type="radio"
-                  value="user"
-                  checked={role === "user"}
-                  onChange={() => setRole("user")}
+                  value="buyer"
+                  checked={role === "buyer"}
+                  onChange={() => setRole("buyer")}
                 />
                 Buyer
               </label>
@@ -113,8 +117,8 @@ const Register = () => {
             </div>
           </div>
 
-          <button type="submit" className="auth-button">
-            Register
+          <button type="submit" className="auth-button" disabled={isLoading}>
+            {isLoading ? "Creating Account..." : "Register"}
           </button>
         </form>
 

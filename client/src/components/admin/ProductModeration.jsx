@@ -15,7 +15,7 @@ const ProductModeration = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/products', {
+      const response = await fetch('http://localhost:8234/api/admin/products', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -42,7 +42,7 @@ const ProductModeration = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}/revoke`, {
+      const response = await fetch(`http://localhost:8234/api/admin/products/${productId}/revoke`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -72,7 +72,7 @@ const ProductModeration = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/admin/products/${productId}/reactivate`, {
+      const response = await fetch(`http://localhost:8234/api/admin/products/${productId}/reactivate`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

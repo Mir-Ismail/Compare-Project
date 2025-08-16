@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import "./profile.css";
 
-function UserProfile({ user, onLogout }) {
+function UserProfile({ user: propUser, onLogout }) {
+  const { user: authUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
@@ -11,6 +15,9 @@ function UserProfile({ user, onLogout }) {
     confirmPassword: "",
   });
   const [message, setMessage] = useState({ text: "", type: "" });
+
+  // Use prop user or auth user
+  const user = propUser || authUser;
 
   // Initialize form data when user prop changes
   useEffect(() => {
@@ -46,29 +53,35 @@ function UserProfile({ user, onLogout }) {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
-        method: 'PUT',
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/auth/profile", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
           currentPassword: formData.password,
           newPassword: formData.newPassword,
-        })
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+        throw new Error(data.error || "Failed to update profile");
       }
 
       setMessage({ text: "Profile updated successfully", type: "success" });
       setEditMode(false);
-      // You might want to update the user context/state here
+
+      // Update the user context if available
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        // You might want to update the auth context here
+      }
     } catch (error) {
       setMessage({
         text: error.message || "Failed to update profile",
@@ -77,13 +90,22 @@ function UserProfile({ user, onLogout }) {
     }
   };
 
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    } else {
+      logout();
+      navigate("/");
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "Not available";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
       return "Not available";
@@ -98,11 +120,9 @@ function UserProfile({ user, onLogout }) {
     <div className="profile-container">
       <div className="profile-header">
         <h2>Your Profile</h2>
-        {!editMode && (
-          <button className="edit-btn" onClick={() => setEditMode(true)}>
-            Edit Profile
-          </button>
-        )}
+        <button classname="btn" onClick={() => setEditMode(!editMode)}>
+          {editMode ? "Cancel" : "Edit Profile"}
+        </button>
       </div>
 
       {message.text && (
@@ -112,9 +132,10 @@ function UserProfile({ user, onLogout }) {
       {editMode ? (
         <form onSubmit={handleSubmit} className="profile-form">
           <div className="form-group">
-            <label>Username</label>
+            <label htmlFor="username">Username</label>
             <input
               type="text"
+              id="username"
               name="username"
               value={formData.username}
               onChange={handleInputChange}
@@ -123,9 +144,10 @@ function UserProfile({ user, onLogout }) {
           </div>
 
           <div className="form-group">
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
+              id="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
@@ -134,20 +156,23 @@ function UserProfile({ user, onLogout }) {
           </div>
 
           <div className="form-group">
-            <label>Current Password (required for changes)</label>
+            <label htmlFor="password">
+              Current Password (required for changes)
+            </label>
             <input
               type="password"
+              id="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              required
             />
           </div>
 
           <div className="form-group">
-            <label>New Password (leave blank to keep current)</label>
+            <label htmlFor="newPassword">New Password (optional)</label>
             <input
               type="password"
+              id="newPassword"
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
@@ -155,9 +180,10 @@ function UserProfile({ user, onLogout }) {
           </div>
 
           <div className="form-group">
-            <label>Confirm New Password</label>
+            <label htmlFor="confirmPassword">Confirm New Password</label>
             <input
               type="password"
+              id="confirmPassword"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
@@ -165,46 +191,44 @@ function UserProfile({ user, onLogout }) {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="save-btn">
+            <button type="submit" classname="btn">
               Save Changes
             </button>
             <button
               type="button"
-              className="cancel-btn"
-              onClick={() => {
-                setEditMode(false);
-                setMessage({ text: "", type: "" });
-              }}
+              className="btn-secondary"
+              onClick={() => setEditMode(false)}
             >
               Cancel
             </button>
           </div>
         </form>
       ) : (
-        <div className="profile-details">
-          <div className="detail-item">
-            <span className="detail-label">Username:</span>
-            <span className="detail-value">{user.username || "Not set"}</span>
+        <div className="profile-info">
+          <div className="info-group">
+            <label>Username:</label>
+            <span>{user.username}</span>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Email:</span>
-            <span className="detail-value">{user.email || "Not set"}</span>
+          <div className="info-group">
+            <label>Email:</label>
+            <span>{user.email}</span>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Account Type:</span>
-            <span className="detail-value">{user.role || "User"}</span>
+          <div className="info-group">
+            <label>Role:</label>
+            <span>{user.role || "buyer"}</span>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Member Since:</span>
-            <span className="detail-value">
-              {formatDate(user.createdAt)}
-            </span>
+          <div className="info-group">
+            <label>Member Since:</label>
+            <span>{formatDate(user.createdAt)}</span>
           </div>
-          <button className="logout-btn" onClick={onLogout}>
-            Logout
-          </button>
         </div>
       )}
+
+      <div className="profile-actions">
+        <button className="btn-secondary" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
     </div>
   );
 }

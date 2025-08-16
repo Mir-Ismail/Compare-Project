@@ -1,28 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { FiEdit, FiTrash2, FiPlus, FiEye } from 'react-icons/fi';
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { FiEdit, FiTrash2, FiPlus, FiEye } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import "./ProductList.css";
 
-const ProductList = () => {
+const ProductList = forwardRef(({ onAddProduct }, ref) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const navigate = useNavigate();
 
   const fetchProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/vendor/products', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:5000/api/vendor/products",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch products');
+        throw new Error("Failed to fetch products");
       }
 
       const data = await response.json();
@@ -34,27 +41,40 @@ const ProductList = () => {
     }
   };
 
+  useImperativeHandle(ref, () => ({
+    fetchProducts,
+  }));
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const deleteProduct = async (productId) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/vendor/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:5000/api/vendor/products/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to delete product');
+        throw new Error("Failed to delete product");
       }
 
       // Remove from local state
-      setProducts(prev => prev.filter(product => product._id !== productId));
+      setProducts((prev) =>
+        prev.filter((product) => product._id !== productId)
+      );
     } catch (err) {
       setError(err.message);
     }
@@ -70,42 +90,43 @@ const ProductList = () => {
 
   const saveEdit = async (productId, updatedData) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/vendor/products/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatedData)
-      });
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:5000/api/vendor/products/${productId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedData),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to update product');
+        throw new Error("Failed to update product");
       }
 
       const updatedProduct = await response.json();
-      setProducts(prev => prev.map(product => 
-        product._id === productId ? updatedProduct : product
-      ));
+      setProducts((prev) =>
+        prev.map((product) =>
+          product._id === productId ? updatedProduct.product : product
+        )
+      );
       setEditingProduct(null);
     } catch (err) {
       setError(err.message);
     }
   };
 
+  // Removed product click functionality - vendors should not navigate to product details
+  // This functionality is for customers only
+
   if (loading) return <div className="loading">Loading products...</div>;
   if (error) return <div className="error">Error: {error}</div>;
 
   return (
     <div className="product-list">
-      <div className="product-header">
-        <h2>Product Management</h2>
-        <button className="btn-primary">
-          <FiPlus /> Add New Product
-        </button>
-      </div>
-
       {products.length === 0 ? (
         <div className="empty-state">
           <FiEye size={48} />
@@ -118,7 +139,11 @@ const ProductList = () => {
             <div key={product._id} className="product-card">
               <div className="product-image">
                 {product.images && product.images[0] ? (
-                  <img src={product.images[0]} alt={product.name} />
+                  <img
+                    className="object-fit-cover"
+                    src={product.images[0]}
+                    alt={product.name}
+                  />
                 ) : (
                   <div className="placeholder-image">No Image</div>
                 )}
@@ -130,7 +155,7 @@ const ProductList = () => {
               </div>
 
               {editingProduct && editingProduct._id === product._id ? (
-                <ProductEditForm 
+                <ProductEditForm
                   product={product}
                   onSave={saveEdit}
                   onCancel={cancelEdit}
@@ -143,15 +168,15 @@ const ProductList = () => {
                     <p className="price">PKR {product.price}</p>
                     <p className="quantity">Stock: {product.quantity}</p>
                   </div>
-                  
+
                   <div className="product-actions">
-                    <button 
+                    <button
                       className="btn-secondary"
                       onClick={() => startEdit(product)}
                     >
                       <FiEdit /> Edit
                     </button>
-                    <button 
+                    <button
                       className="btn-danger"
                       onClick={() => deleteProduct(product._id)}
                     >
@@ -166,7 +191,7 @@ const ProductList = () => {
       )}
     </div>
   );
-};
+});
 
 // Product Edit Form Component
 const ProductEditForm = ({ product, onSave, onCancel }) => {
@@ -174,7 +199,9 @@ const ProductEditForm = ({ product, onSave, onCancel }) => {
     name: product.name,
     description: product.description,
     price: product.price,
-    quantity: product.quantity
+    quantity: product.quantity,
+    category: product.category || "",
+    brand: product.brand || "",
   });
 
   const handleSubmit = (e) => {
@@ -185,7 +212,7 @@ const ProductEditForm = ({ product, onSave, onCancel }) => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -223,8 +250,25 @@ const ProductEditForm = ({ product, onSave, onCancel }) => {
         placeholder="Quantity"
         required
       />
+      <input
+        type="text"
+        name="category"
+        value={formData.category}
+        onChange={handleChange}
+        placeholder="Category"
+        required
+      />
+      <input
+        type="text"
+        name="brand"
+        value={formData.brand}
+        onChange={handleChange}
+        placeholder="Brand"
+      />
       <div className="form-actions">
-        <button type="submit" className="btn-primary">Save</button>
+        <button type="submit" classname="btn">
+          Save
+        </button>
         <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
@@ -233,4 +277,6 @@ const ProductEditForm = ({ product, onSave, onCancel }) => {
   );
 };
 
-export default ProductList; 
+ProductList.displayName = "ProductList";
+
+export default ProductList;

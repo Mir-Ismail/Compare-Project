@@ -14,7 +14,7 @@ const SupplyPurchaseDetails = () => {
   const fetchSupplyPurchaseData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/supply-purchase', {
+      const response = await fetch('http://localhost:8234/api/admin/supply-purchase', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

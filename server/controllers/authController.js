@@ -5,17 +5,11 @@ import jwt from 'jsonwebtoken';
 // Generate JWT Token
 const generateToken = (res, userId) => {
   const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '1h'
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   });
 
-  // Set cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development',
-    sameSite: 'strict',
-    maxAge: 30 * 60 * 60 * 1000 // 30 days
-  });
-
+  // Don't set cookies since client is using localStorage
+  // Just return the token for the client to store
   return token;
 };
 
